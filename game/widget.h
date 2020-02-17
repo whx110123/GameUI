@@ -4,6 +4,8 @@
 #include <QWidget>
 #include <QButtonGroup>
 #include <QFileInfoList>
+#include <QAction>
+#include <QMenu>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -40,6 +42,12 @@ private:
     QFileInfoList fileList;
     QString romDir;
     void openDir(QString fileDir);
-    bool refreshlist(QString fileDir);
+    bool refreshlist();
+
+private:
+    QMenu *menulabel;
+    QAction *act1label;
+    int actindex;
+
 };
 #endif // WIDGET_H

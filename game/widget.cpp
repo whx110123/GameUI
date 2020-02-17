@@ -18,6 +18,58 @@ Widget::Widget(QWidget *parent)
     ui->radioButton_1->toggle();
     fileList.clear();
     ui->checkBox->setChecked(true);
+
+    menulabel = new QMenu(this);
+    act1label = new QAction(tr("打开目录"),this);
+    actindex = 0;
+    menulabel->addAction(act1label);
+    ui->label_1->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->label_2->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->label_3->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->label_4->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    connect(ui->label_1,&QLabel::customContextMenuRequested,[=]()
+    {
+        actindex = 1;
+        menulabel->exec(QCursor::pos());
+    });
+    connect(ui->label_2,&QLabel::customContextMenuRequested,[=]()
+    {
+        actindex = 2;
+        menulabel->exec(QCursor::pos());
+    });
+    connect(ui->label_3,&QLabel::customContextMenuRequested,[=]()
+    {
+        actindex = 3;
+        menulabel->exec(QCursor::pos());
+    });
+    connect(ui->label_4,&QLabel::customContextMenuRequested,[=]()
+    {
+        actindex = 4;
+        menulabel->exec(QCursor::pos());
+    });
+    connect(act1label,&QAction::triggered,[=]()
+    {
+        switch (actindex)
+        {
+        case 1:
+            openDir(ui->label_1->text());
+            break;
+        case 2:
+            openDir(ui->label_2->text());
+            break;
+        case 3:
+            openDir(ui->label_3->text());
+            break;
+        case 4:
+            openDir(ui->label_4->text());
+            break;
+        default:
+            QMessageBox::warning(this,tr("警告对话框"),tr("未找到目录！    "));
+            break;
+        }
+    });
+
 }
 
 Widget::~Widget()
@@ -26,34 +78,30 @@ Widget::~Widget()
 }
 
 
-void Widget::on_rom_btn_1_clicked()     //打开rom文件夹
+void Widget::on_rom_btn_1_clicked()     //还原所有路径
 {
-    romDir = QFileDialog::getExistingDirectory(this,tr("文件对话框"),"");
-    if(romDir.isEmpty())
-    {
-        ui->label_1->clear();
-    }
-    else
-    {
-        ui->label_1->setText(romDir+"/");
-    }
-    //refreshlist(romDir);
+
+    ui->label_1->setText(tr("文件夹路径"));
+    ui->label_2->setText(tr("文件路径"));
+    ui->label_3->setText(tr("文件路径"));
+    ui->label_4->setText(tr("文件夹路径"));
+    ui->label_5->setText(tr("提醒："));
+    romDir.clear();
 
 }
 
 void Widget::on_list_btn_2_clicked()    //导出游戏列表
 {
-    if(!refreshlist(romDir))
+    if(!refreshlist())
     {
         return;
     }
-    QString fileDir = QFileDialog::getSaveFileName(this,tr("保存对话框"),"",tr("文本文件(*ini *txt)"));
-    if(fileDir.isEmpty())
+    QString fileDir = ui->label_2->text();
+    if(fileDir.lastIndexOf('/')<0)
     {
-        ui->label_2->clear();
+        QMessageBox::warning(this,tr("警告对话框"),tr("路径不正确   "));
         return;
     }
-    ui->label_2->setText(fileDir);
     QFile file(fileDir);
 
     if(!file.open(QIODevice::WriteOnly|QIODevice::Text))
@@ -73,21 +121,22 @@ void Widget::on_list_btn_2_clicked()    //导出游戏列表
     }
     file.close();
     QMessageBox::information(this,tr("提示对话框"),tr("已完成       "));
+    ui->label_5->setText(tr("提醒："));
 }
 
 void Widget::on_name_btn_3_clicked()    //导出重命名文件
 {
-    if(!refreshlist(romDir))
+    if(!refreshlist())
     {
         return;
     }
-    QString fileDir = QFileDialog::getSaveFileName(this,tr("保存对话框"),"",tr("文本文件(*ini)"));
-    if(fileDir.isEmpty())
+
+    QString fileDir = ui->label_3->text();
+    if(fileDir.lastIndexOf('/')<0)
     {
-        ui->label_3->clear();
+        QMessageBox::warning(this,tr("警告对话框"),tr("路径不正确   "));
         return;
     }
-    ui->label_3->setText(fileDir);
     QFile file(fileDir);
 
     if(!file.open(QIODevice::WriteOnly|QIODevice::Text))
@@ -114,7 +163,7 @@ void Widget::on_name_btn_3_clicked()    //导出重命名文件
             if(a<0)
             {
                 QMessageBox::warning(this,tr("警告对话框"),tr("发现非编号条目，请重新选择列表类型！"));
-                ui->label_3->setText("无编号:"+str);
+                ui->label_5->setText("提醒：无编号 "+str);
                 file.close();
                 return;
             }
@@ -128,7 +177,7 @@ void Widget::on_name_btn_3_clicked()    //导出重命名文件
             if(aaa<1)
             {
                 QMessageBox::warning(this,tr("警告对话框"),tr("该游戏列表不满足重命名条件！"));
-                ui->label_3->setText("不满足重命名:"+str);
+                ui->label_5->setText("提醒：不满足重命名 "+str);
                 file.close();
                 return;
             }
@@ -145,7 +194,7 @@ void Widget::on_name_btn_3_clicked()    //导出重命名文件
             if(aaa<1)
             {
                 QMessageBox::warning(this,tr("警告对话框"),tr("该游戏列表不满足重命名条件！"));
-                ui->label_3->setText("不满足重命名:"+str);
+                ui->label_5->setText("提醒：不满足重命名 "+str);
                 file.close();
                 return;
             }
@@ -162,20 +211,35 @@ void Widget::on_name_btn_3_clicked()    //导出重命名文件
     }
     file.close();
     QMessageBox::information(this,tr("提示对话框"),tr("已完成       "));
+    ui->label_5->setText(tr("提醒："));
 }
 
 void Widget::on_txt_btn_4_clicked()     //批量导出txt文件
 {
-    if(!refreshlist(romDir))
+    if(!refreshlist())
     {
         return;
     }
-    QString fileDir = QFileDialog::getExistingDirectory(this,tr("文件对话框"),"");
-    if(fileDir.isEmpty())
+    QString fileDir = ui->label_4->text();
+    if(fileDir.lastIndexOf('/')<0)
     {
-        ui->label_4->clear();
+        QMessageBox::warning(this,tr("警告对话框"),tr("路径不正确   "));
         return;
     }
+    QDir dir(fileDir);
+    if(!dir.exists())
+    {
+        int ret = QMessageBox::question(this,tr("文件夹对话框"),tr("文件夹不存在，是否创建   "),QMessageBox::Yes,QMessageBox::No);
+        if(ret == QMessageBox::Yes)
+        {
+            dir.mkpath(fileDir);//创建多级目录
+        }
+        else
+        {
+            return;
+        }
+    }
+
     for (int i = 0; i < fileList.size(); ++i)
     {
         QFileInfo fileInfo = fileList.at(i);
@@ -191,7 +255,7 @@ void Widget::on_txt_btn_4_clicked()     //批量导出txt文件
             if(a < 0)
             {
                 QMessageBox::warning(this,tr("警告对话框"),tr("发现非编号条目，请重新选择列表类型！"));
-                ui->label_4->setText("无编号:"+str);
+                ui->label_5->setText("提醒：无编号 "+str);
                 return;
             }
             str = str.mid(a+3);
@@ -214,11 +278,11 @@ void Widget::on_txt_btn_4_clicked()     //批量导出txt文件
         if(aaa<1)
         {
             QMessageBox::warning(this,tr("警告对话框"),tr("该游戏列表不满足重命名条件！"));
-            ui->label_4->setText("不满足重命名:"+str);
+            ui->label_5->setText("提醒：不满足重命名 "+str);
             return;
         }
         str.resize(aaa);
-        str = fileDir + "/" + str + ".txt";
+        str = fileDir  + str + ".txt";
         QFile file_create(str);
         if(!file_create.open(QIODevice::ReadWrite))
         {
@@ -227,32 +291,58 @@ void Widget::on_txt_btn_4_clicked()     //批量导出txt文件
         }
         file_create.close();
     }
-    ui->label_4->setText(fileDir+"/");
+
     QMessageBox::information(this,tr("提示对话框"),tr("已完成       "));
+    ui->label_5->setText(tr("提醒："));
 
 }
 
-void Widget::on_openDir_1_clicked()
+void Widget::on_openDir_1_clicked()     //打开rom文件夹
 {
-    openDir(ui->label_1->text());
+    QString fileDir = QFileDialog::getExistingDirectory(this,tr("文件对话框"),"");
+    if(!fileDir.isEmpty())
+    {
+        romDir = fileDir;
+        fileDir.remove(fileDir.split("/").last());
+        ui->label_1->setText(romDir+"/");
+        ui->label_2->setText(fileDir+"list.ini");
+        ui->label_3->setText(fileDir+"alias.ini");
+        ui->label_4->setText(fileDir+tr("整合/"));
+        ui->label_5->setText(tr("提醒："));
+    }
 }
 
-void Widget::on_openDir_2_clicked()
+void Widget::on_openDir_2_clicked()     //选择列表文件
 {
-    openDir(ui->label_2->text());
+    QString fileDir = QFileDialog::getSaveFileName(this,tr("保存对话框"),"",tr("文本文件(*ini *txt)"));
+    if(!fileDir.isEmpty())
+    {
+        ui->label_2->setText(fileDir);
+        ui->label_5->setText(tr("提醒："));
+    }
 }
 
-void Widget::on_openDir_3_clicked()
+void Widget::on_openDir_3_clicked()     //选择命名文件
 {
-    openDir(ui->label_3->text());
+    QString fileDir = QFileDialog::getSaveFileName(this,tr("保存对话框"),"",tr("文本文件(*ini)"));
+    if(!fileDir.isEmpty())
+    {
+        ui->label_3->setText(fileDir);
+        ui->label_5->setText(tr("提醒："));
+    }
 }
 
-void Widget::on_openDir_4_clicked()
+void Widget::on_openDir_4_clicked()     //选择txt文件夹
 {
-    openDir(ui->label_4->text());
+    QString fileDir = QFileDialog::getExistingDirectory(this,tr("文件对话框"),"");
+    if(!fileDir.isEmpty())
+    {
+        ui->label_4->setText(fileDir+"/");
+        ui->label_5->setText(tr("提醒："));
+    }
 }
 
-void Widget::openDir(QString fileDir)
+void Widget::openDir(QString fileDir)   //打开指定文件夹
 {
     if(fileDir.lastIndexOf('/')<0)
     {
@@ -263,12 +353,12 @@ void Widget::openDir(QString fileDir)
     QDesktopServices::openUrl(QUrl::fromLocalFile(fileDir));
 }
 
-bool Widget::refreshlist(QString romDir)
+bool Widget::refreshlist()              //刷新游戏列表
 {
     if(romDir.isEmpty())
     {
         QMessageBox::warning(this,tr("警告对话框"),tr("未找到目录！    "));
-        ui->label_1->setText(tr("请先打开rom目录"));
+        ui->label_5->setText(tr("提醒：请先打开rom目录"));
         return false;
     }
     QDir dir(romDir);
